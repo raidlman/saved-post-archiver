@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reddit-archiver-viewer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reddit-archiver-viewer
+  template:
+    metadata:
+      labels:
+        app: reddit-archiver-viewer
+    spec:
+      initContainers:
+        - name: render-caddyfile
+          image: git.sknt.xyz/stephan.riedel/reddit-archiver-viewer:0.1.0
+          command:
+            - sh
+            - -c
+            - apk add --no-cache gettext >/dev/null && envsubst < /etc/caddy-template/Caddyfile > /etc/caddy/Caddyfile
+          envFrom:
+            - secretRef:
+                name: reddit-archiver-secret
+          volumeMounts:
+            - name: caddy-config
+              mountPath: /etc/caddy
+      containers:
+        - name: caddy
+          image: git.sknt.xyz/stephan.riedel/reddit-archiver-viewer:0.1.0
+          ports:
+            - containerPort: 80
+              name: http
+          volumeMounts:
+            - name: data
+              mountPath: /data
+              readOnly: true
+            - name: caddy-config
+              mountPath: /etc/caddy
+              readOnly: true
+          resources:
+            requests:
+              cpu: 5m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          # tcpSocket, not httpGet: basic_auth in the Caddyfile protects "/" too,
+          # so an unauthenticated httpGet probe would always see 401.
+          livenessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: reddit-archiver-data
+        - name: caddy-config
+          emptyDir: {}

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Reddit Archive</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; font-family: system-ui, sans-serif; background: #15161a; color: #e6e6e6; }
+  header { position: sticky; top: 0; background: #1d1f26; padding: 12px 16px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; border-bottom: 1px solid #333; z-index: 1; }
+  header input, header select { background: #2a2c35; color: #e6e6e6; border: 1px solid #444; border-radius: 4px; padding: 6px 8px; }
+  header .count { margin-left: auto; color: #888; font-size: 0.9em; }
+  main { padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  .card { background: #1d1f26; border-radius: 8px; overflow: hidden; text-decoration: none; color: inherit; display: flex; flex-direction: column; }
+  .card img, .card .placeholder { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; background: #2a2c35; display: flex; align-items: center; justify-content: center; font-size: 0.8em; color: #777; text-align: center; padding: 8px; box-sizing: border-box; }
+  .card .meta { padding: 8px 10px; font-size: 0.85em; }
+  .card .title { display: block; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card .sub { color: #9ecbff; }
+  .card .badges { margin-top: 4px; }
+  .badge { display: inline-block; font-size: 0.7em; padding: 2px 6px; border-radius: 3px; margin-right: 4px; }
+  .badge.nsfw { background: #632; color: #fbb; }
+  .badge.status-unavailable { background: #522; color: #f99; }
+  .badge.status-partial { background: #553; color: #ff9; }
+</style>
+</head>
+<body>
+<header>
+  <input id="filter-author" type="text" placeholder="Filter by author (u/...)">
+  <select id="filter-subreddit"><option value="">All subreddits</option></select>
+  <select id="sort-by">
+    <option value="date-desc">Newest first</option>
+    <option value="date-asc">Oldest first</option>
+    <option value="score-desc">Top score</option>
+    <option value="score-asc">Lowest score</option>
+  </select>
+  <span class="count" id="count"></span>
+</header>
+<main id="grid"></main>
+<script>
+let posts = [];
+
+function thumbUrl(p) {
+  if (p.thumbnail) return p.thumbnail;
+  const first = (p.media_files || [])[0];
+  if (first && /\.(jpg|jpeg|png|webp|gif)$/i.test(first.path)) return first.path;
+  return null;
+}
+
+function render() {
+  const authorFilter = document.getElementById('filter-author').value.trim().toLowerCase();
+  const subFilter = document.getElementById('filter-subreddit').value;
+  const sortBy = document.getElementById('sort-by').value;
+
+  let filtered = posts.filter(p =>
+    (!authorFilter || (p.author || '').toLowerCase().includes(authorFilter)) &&
+    (!subFilter || p.subreddit === subFilter)
+  );
+
+  const [field, dir] = sortBy.split('-');
+  filtered.sort((a, b) => {
+    const va = field === 'score' ? (a.score ?? -Infinity) : a.created_utc;
+    const vb = field === 'score' ? (b.score ?? -Infinity) : b.created_utc;
+    return dir === 'asc' ? va - vb : vb - va;
+  });
+
+  document.getElementById('count').textContent = `${filtered.length} / ${posts.length} posts`;
+
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  for (const p of filtered) {
+    const a = document.createElement('a');
+    a.className = 'card';
+    a.href = `/viewer/post.html?id=${encodeURIComponent(p.id)}`;
+
+    const thumb = thumbUrl(p);
+    if (thumb) {
+      const img = document.createElement('img');
+      img.src = thumb;
+      img.loading = 'lazy';
+      a.appendChild(img);
+    } else {
+      const ph = document.createElement('div');
+      ph.className = 'placeholder';
+      ph.textContent = p.is_self ? '[text post]' : '[no preview]';
+      a.appendChild(ph);
+    }
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.innerHTML = `
+      <span class="title" title="${p.title || ''}">${p.title || '(untitled)'}</span>
+      <span class="sub">r/${p.subreddit}</span> · u/${p.author} · ${p.score ?? '?'}▲
+      <div class="badges">
+        ${p.over_18 ? '<span class="badge nsfw">NSFW</span>' : ''}
+        ${p.media_status === 'unavailable' ? '<span class="badge status-unavailable">media gone</span>' : ''}
+        ${p.media_status === 'partial' ? '<span class="badge status-partial">retrying</span>' : ''}
+      </div>`;
+    a.appendChild(meta);
+    grid.appendChild(a);
+  }
+}
+
+fetch('/viewer/data.json').then(r => r.json()).then(data => {
+  posts = data;
+  const subs = [...new Set(posts.map(p => p.subreddit))].sort();
+  const select = document.getElementById('filter-subreddit');
+  for (const s of subs) {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = `r/${s}`;
+    select.appendChild(opt);
+  }
+  render();
+});
+
+document.getElementById('filter-author').addEventListener('input', render);
+document.getElementById('filter-subreddit').addEventListener('change', render);
+document.getElementById('sort-by').addEventListener('change', render);
+</script>
+</body>
+</html>

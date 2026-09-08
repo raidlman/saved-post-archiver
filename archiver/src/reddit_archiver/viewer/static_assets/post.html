@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Reddit Archive - Post</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; font-family: system-ui, sans-serif; background: #15161a; color: #e6e6e6; }
+  header { padding: 12px 16px; border-bottom: 1px solid #333; }
+  header a { color: #9ecbff; text-decoration: none; }
+  main { max-width: 900px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 1.3em; }
+  .meta { color: #999; margin-bottom: 16px; }
+  .meta a { color: #9ecbff; }
+  .media img, .media video { max-width: 100%; display: block; margin-bottom: 12px; border-radius: 6px; }
+  .badge { display: inline-block; font-size: 0.75em; padding: 2px 6px; border-radius: 3px; margin-right: 6px; }
+  .badge.nsfw { background: #632; color: #fbb; }
+  .badge.status-unavailable { background: #522; color: #f99; }
+  .badge.status-partial { background: #553; color: #ff9; }
+  .body-text { white-space: pre-wrap; background: #1d1f26; padding: 12px; border-radius: 6px; }
+  .source-link { font-size: 0.8em; color: #777; margin-top: -8px; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<header><a href="/viewer/index.html">&larr; back to archive</a></header>
+<main id="content">Loading...</main>
+<script>
+const id = new URLSearchParams(location.search).get('id');
+
+fetch('/viewer/data.json').then(r => r.json()).then(data => {
+  const p = data.find(x => x.id === id);
+  const content = document.getElementById('content');
+  if (!p) { content.textContent = 'Post not found.'; return; }
+
+  let html = `<h1>${p.title || '(untitled)'}</h1>`;
+  html += `<div class="meta">
+    r/${p.subreddit} · u/${p.author} · ${p.score ?? '?'}&#9650; ·
+    <a href="${p.permalink}" target="_blank" rel="noopener">original on reddit</a>
+    ${p.is_crosspost ? ` · crosspost (seen via r/${p.crosspost_seen_via_subreddit})` : ''}
+  </div>`;
+  html += `<div>
+    ${p.over_18 ? '<span class="badge nsfw">NSFW</span>' : ''}
+    ${p.media_status === 'unavailable' ? '<span class="badge status-unavailable">media unavailable - needs manual review</span>' : ''}
+    ${p.media_status === 'partial' ? '<span class="badge status-partial">download incomplete - will retry</span>' : ''}
+  </div>`;
+
+  if (p.is_self && p.body_text) {
+    html += `<div class="body-text">${p.body_text}</div>`;
+  }
+
+  html += '<div class="media">';
+  for (const f of (p.media_files || [])) {
+    if (/\.(mp4|webm|mov|mkv)$/i.test(f.path)) {
+      html += `<video controls src="${f.path}"></video>`;
+    } else {
+      html += `<img src="${f.path}" loading="lazy">`;
+    }
+    if (f.source_url) {
+      html += `<div class="source-link">source: <a href="${f.source_url}" target="_blank" rel="noopener">${f.source_url}</a></div>`;
+    }
+  }
+  if (!p.is_self && (!p.media_files || p.media_files.length === 0)) {
+    html += `<p>No media archived. Original link: <a href="${p.url}" target="_blank" rel="noopener">${p.url}</a></p>`;
+  }
+  html += '</div>';
+
+  document.getElementById('content').innerHTML = html;
+});
+</script>
+</body>
+</html>

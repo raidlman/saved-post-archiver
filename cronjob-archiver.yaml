@@ -1,0 +1,58 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: reddit-archiver
+spec:
+  schedule: "0 */6 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 3300
+      template:
+        spec:
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: archiver
+              image: git.sknt.xyz/stephan.riedel/reddit-archiver:0.1.0
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 200m
+                  memory: 256Mi
+                limits:
+                  cpu: "1"
+                  memory: 1Gi
+              env:
+                # yt-dlp/gallery-dl want a writable HOME for their cache dirs;
+                # the image's own $HOME is baked into the read-only root fs.
+                - name: HOME
+                  value: /tmp
+              envFrom:
+                - configMapRef:
+                    name: reddit-archiver-config
+                - secretRef:
+                    name: reddit-archiver-secret
+              volumeMounts:
+                - name: data
+                  mountPath: /data
+                - name: tmp
+                  mountPath: /tmp
+          restartPolicy: Never
+          volumes:
+            - name: data
+              persistentVolumeClaim:
+                claimName: reddit-archiver-data
+            - name: tmp
+              emptyDir: {}

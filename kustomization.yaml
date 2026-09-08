@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: reddit-archiver
+
+resources:
+  - namespace.yaml
+  - pvc.yaml
+  - cronjob-archiver.yaml
+  - deployment-viewer.yaml
+  - service-viewer.yaml
+  - httproute-viewer.yaml
+
+configMapGenerator:
+  - name: reddit-archiver-config
+    envs:
+      - config.env
+    options:
+      disableNameSuffixHash: true
+
+secretGenerator:
+  - name: reddit-archiver-secret
+    envs:
+      - secret.env
+    options:
+      disableNameSuffixHash: true
