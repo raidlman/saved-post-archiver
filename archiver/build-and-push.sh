@@ -6,7 +6,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPONENT_DIR="$(dirname "${SCRIPT_DIR}")"
-IMAGE="git.sknt.xyz/stephan.riedel/reddit-archiver"
+IMAGE="your-registry.example.com/your-namespace/reddit-archiver"
 
 APP_VERSION=$(grep -oP '^ARG APP_VERSION=\K.*' "${SCRIPT_DIR}/Dockerfile")
 TAG="${APP_VERSION}"

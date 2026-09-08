@@ -21,7 +21,7 @@ spec:
               type: RuntimeDefault
           containers:
             - name: archiver
-              image: git.sknt.xyz/stephan.riedel/reddit-archiver:0.1.0
+              image: your-registry.example.com/your-namespace/reddit-archiver:0.1.0
               securityContext:
                 allowPrivilegeEscalation: false
                 readOnlyRootFilesystem: true

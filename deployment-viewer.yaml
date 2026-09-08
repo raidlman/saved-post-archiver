@@ -14,7 +14,7 @@ spec:
     spec:
       initContainers:
         - name: render-caddyfile
-          image: git.sknt.xyz/stephan.riedel/reddit-archiver-viewer:0.1.0
+          image: your-registry.example.com/your-namespace/reddit-archiver-viewer:0.1.0
           command:
             - sh
             - -c
@@ -27,7 +27,7 @@ spec:
               mountPath: /etc/caddy
       containers:
         - name: caddy
-          image: git.sknt.xyz/stephan.riedel/reddit-archiver-viewer:0.1.0
+          image: your-registry.example.com/your-namespace/reddit-archiver-viewer:0.1.0
           ports:
             - containerPort: 80
               name: http

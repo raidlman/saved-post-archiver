@@ -7,7 +7,7 @@ spec:
     - name: main-gateway
       namespace: gateway
   hostnames:
-    - reddit-archive.sknt.xyz
+    - reddit-archive.example.com
   rules:
     - matches:
         - path:

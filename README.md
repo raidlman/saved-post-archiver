@@ -1,7 +1,7 @@
 # Reddit Archiver
 
 > Mirrored out of a private homelab GitOps repo for external review. Paths
-> like `git.sknt.xyz/...` are the author's own private container registry -
+> like `your-registry.example.com/...` are the author's own private container registry -
 > not required to run this elsewhere.
 
 Archives saved Reddit posts (media at highest available quality, OP, subreddit,
@@ -191,7 +191,7 @@ written to disk and no `unsave()` calls are made in this mode.
 ### 5. Build and push both images
 
 ```bash
-cd archiver && docker login git.sknt.xyz && ./build-and-push.sh
+cd archiver && docker login your-registry.example.com && ./build-and-push.sh
 cd ../viewer && ./build-and-push.sh
 ```
 
@@ -212,7 +212,7 @@ kubectl create job --from=cronjob/reddit-archiver reddit-archiver-manual-1 -n re
 kubectl logs -f job/reddit-archiver-manual-1 -n reddit-archiver
 ```
 
-Then visit `https://reddit-archive.sknt.xyz` (Basic Auth prompt from Caddy,
+Then visit `https://reddit-archive.example.com` (Basic Auth prompt from Caddy,
 then the gallery).
 
 ## Notes
